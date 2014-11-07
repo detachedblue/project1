@@ -23,9 +23,9 @@ subpattern = zeros(patternsizex,patternsizey,channels);
 for i = 1:checkersize
     for j = 1:checkersize
         subpattern(i,j,:) = white;
-        subpattern(i+checkersize,j,:) = black;
-        subpattern(i,j+checkersize,:) = black;
-        subpattern(i+checkersize,j+checkersize,:) = white;
+        subpattern(i+checkersize,j,:) = red;
+        subpattern(i,j+checkersize,:) = green;
+        subpattern(i+checkersize,j+checkersize,:) = blue;
     end
 end
 figure(1)

@@ -1,0 +1,150 @@
+function [patternindex,outputpattern] = PatternRandom2x2()
+close all
+tic
+fprintf('setting up parameters, generating colour arrays\n');
+% pattern generator graphical parameters
+xresolution = 1280;
+yresolution = 720;
+channels = 3;
+outputpattern = zeros(yresolution,xresolution,channels);
+
+% define colours
+colourcell{1} = [0 0 0]; % black
+colourcell{2} = [255 255 255]; % white
+colourcell{3} = [255 0 0]; % red
+colourcell{4} = [0 255 0]; % green
+colourcell{5} = [0 0 255]; % blue
+colourcell{6} = [0 255 255]; % cyan
+colourcell{7} = [255 0 255]; % magenta
+colourcell{8} = [255 255 0]; % yellow
+
+%checkerboard pattern
+checkersize = 40; % edge length of checker in pixels. for best results, use 5,10,20,40.
+numcheckersx = 2;
+numcheckersy = 2;
+patternsizex = checkersize*numcheckersx; % number of checkers in x direction before pattern repeats
+patternsizey = checkersize*numcheckersy; % number of checkers in y direction before pattern repeats
+numpatternshorz = floor(yresolution / patternsizex)*numcheckersx;
+numpatternsvert = floor(xresolution / patternsizey)*numcheckersy;
+colourarray = zeros(checkersize,checkersize,channels);
+colourcellfullres = cell(1,size(colourcell,2));
+
+for i = 1:size(colourcell,2)
+    for j = 1:checkersize
+        for k = 1:checkersize
+            colourarray(j,k,:) = colourcell{i};
+            colourcellfullres{i} = colourarray;
+        end
+    end
+end
+
+% array to store colour index before expanding
+patternindex = zeros(numpatternshorz,numpatternsvert);
+subpattern = zeros(2,2); % 2x2 colour matrix, stores colour index
+toc
+
+fprintf('generating random, unique checkerboard indices\n');
+tic
+for i = 1:2:numpatternshorz
+    for j = 1:2:numpatternsvert
+        % generate random colours for the subpattern
+        assignpattern = 0;
+        while(assignpattern == 0)
+            rng('shuffle');
+            randnums = randperm(7,4)+1; 
+            % ignore white and black colours, ie, generate 4 rand ints from 3 to 8
+            subpattern(1,1) = randnums(1);
+            subpattern(1,2) = randnums(2);
+            subpattern(2,1) = randnums(3);
+            subpattern(2,2) = randnums(4);
+
+            assignpattern = checkedges(subpattern,patternindex,i,j);
+            % fill patternindex if pattern is not found in patternhistory, 
+            % or adjacent tiles are of the same colour, 
+            % or adjacent tiles form an existing 2x2 tile.
+
+            if assignpattern == 1
+                % assign pattern to index if found to be unique
+                patternindex(i,j) = subpattern(1,1);
+                patternindex(i,j+1) = subpattern(1,2);
+                patternindex(i+1,j) = subpattern(2,1);
+                patternindex(i+1,j+1) = subpattern(2,2);
+%                 fprintf('index %d,%d assigned\n',i,j);
+            end
+        end
+
+    end
+end
+toc
+
+% figure(1)
+% imshow(patternindex)
+
+fprintf('generating full-res checkerboard\n');
+tic
+% expand pattern index to full resolution
+for i = 1:numpatternshorz
+    for j = 1:numpatternsvert
+        outputpattern((i-1)*checkersize+1:i*checkersize,(j-1)*checkersize+1:j*checkersize,:) = colourcellfullres{patternindex(i,j)};
+    end
+end
+toc
+
+% figure(2);
+% imshow(outputpattern)
+
+
+end
+
+function [istrue] = checkedges(subpattern,patternindex,currenti,currentj)
+% check left edges
+if currentj <= 1
+    ;
+else
+    if subpattern(1,1) == patternindex(currenti,currentj-1)
+        istrue = 0;
+        return;
+    elseif subpattern(2,1) == patternindex(currenti+1,currentj-1)
+        istrue = 0;
+        return;
+    end
+end
+% fprintf('left edge passed\n');
+
+% check top edges
+if currenti <= 1
+    ;
+else
+    if subpattern(1,1) == patternindex(currenti-1,currentj)
+        istrue = 0;
+        return;
+    elseif subpattern(1,2) == patternindex(currenti-1,currentj+1)
+        istrue = 0;
+        return;
+    end
+end
+% fprintf('top edge passed\n');
+
+% check previous 2x2 tiles
+testpattern = zeros(2,2);
+
+for i = 1:currenti-1
+    for j = 1:currentj-1
+        testpattern(1,1) = patternindex(i,j);
+        testpattern(1,2) = patternindex(i,j+1);
+        testpattern(2,1) = patternindex(i+1,j);
+        testpattern(2,2) = patternindex(i+1,j+1);
+%         testpattern
+%         patternindex
+        
+        if sum(sum(testpattern == subpattern)) == 4
+            istrue = 0;
+            return;
+        end
+    end
+end
+% fprintf('uniqueness passed\n');
+
+istrue = 1;
+return;
+end
