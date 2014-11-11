@@ -1,0 +1,11 @@
+function [] = DetectPatterns(inputimage,PatternIndex)
+
+% find seeds
+
+% grow regions
+
+% find edges between colour segments
+
+% 
+
+end
